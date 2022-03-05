@@ -1,6 +1,6 @@
 # mc-sinor-challange
 
-## i'm not responsible of anything your are goging to do this with this
+i'm not responsible of anything your are goging to do this with this
 
 your are resposible for all your actions
 
